@@ -218,25 +218,79 @@
 
   const DISCLAIMER = " (Views are my own, not my employer's.)";
 
+  const ELABORATIONS = {
+    commentator: (topic) => ([
+      `I've been thinking about a recent headline in ${topic} this week. What struck me wasn't the number itself, but what it signals for the next few quarters. A couple of reasons this matters: it changes how clients should think about their exposure, and it's a reminder that the fundamentals here move faster than the reporting cycle suggests. Curious what others in ${topic} are seeing — is this a blip or the start of a trend?`,
+      `Three things I'm watching in ${topic} this quarter: 1) a shift worth tracking because it changes how deals get structured. 2) a process or technology change that could compress timelines that used to take months. 3) a shift in client behaviour, the most telling one, because it shows where demand is actually heading rather than where it's been. What would you add to this list?`,
+      `Everyone's talking about the headline stat in ${topic} right now, but the more interesting number is usually buried a few paragraphs down. That's the one that actually changes how I'd advise a client this week. Worth a second read before drawing conclusions from the top-line figure alone.`
+    ]),
+    connector: (topic) => ([
+      `Congratulations to [Name] on the new role — well earned. We first connected over a shared interest in ${topic}, and it's been great watching how that's shaped their path since. Excited to see what's next.`,
+      `A few people doing genuinely interesting work in ${topic} right now, worth a follow: [Name 1] — [one line on what they do]. [Name 2] — [one line]. [Name 3] — [one line]. If you're in this space, their posts are consistently worth the two minutes.`,
+      `Had a conversation recently that gave me a new angle on ${topic}. Without naming names: [the anonymised insight]. Good reminder that the best ideas in this space rarely come from a report — they come from talking to the people actually doing the work.`
+    ]),
+    niche: (topic) => ([
+      `One concept in ${topic} that's simple once you see it, but takes people a while to get to: [concept]. Here's how I'd explain it to someone new to the space: [plain 2-3 sentence explanation]. Once that clicks, a lot of the surrounding jargon starts to make sense too.`,
+      `A common misconception about ${topic}: people assume [misconception]. In practice, [the more accurate picture]. It's a small distinction, but it changes how you'd actually approach a decision in this space.`,
+      `A quick, anonymised example of ${topic} in practice: a client came to us assuming [initial assumption], and the solution ended up being [a different approach]. The gap between the two is usually where the real value gets created.`
+    ]),
+    mentor: (topic) => ([
+      `A question I get often from people looking to break into ${topic}: [the common question]. My honest answer: [a short piece of advice]. Not the answer people expect, but the one that's actually served me well.`,
+      `One lesson I wish I'd known earlier about ${topic}: [the lesson]. Early on I assumed [an assumption], and it took a while to realise [what's actually true]. Sharing in case it saves someone else the detour.`,
+      `If I were starting over in ${topic} today, I'd spend less time on [a less useful focus] and more time on [a more useful one]. The fundamentals matter, but so does understanding the practical side early — that's the part nobody tells you about.`
+    ]),
+    advocate: (topic) => ([
+      `MUFG just shared an update on ${topic} — worth a look. What stood out to me was [a specific detail], and how it connects to the work we're doing on the ground with clients in this space. Proud to be part of a team pushing this forward.`,
+      `Just came out of a great session on ${topic} at [event name]. A few takeaways: [point one], [point two]. Thanks to [speaker names] for a genuinely useful discussion — already thinking about how to apply it.`,
+      `Proud of the team behind a recent ${topic} project — a genuine group effort from [Name], [Name], and [Name]. This kind of work doesn't happen without strong collaboration across teams, and it was great to be part of it.`
+    ])
+  };
+
   window.generateDrafts = function(){
     const topic = (document.getElementById('topicInput').value || 'your field').trim();
     const angle = document.getElementById('angleInput').value;
     const wantsDisclaimer = document.getElementById('disclaimerToggle').checked;
     let posts = TEMPLATES[angle](topic);
-    if (wantsDisclaimer) posts = posts.map(p => p + DISCLAIMER);
+    let elaborated = ELABORATIONS[angle](topic);
+    if (wantsDisclaimer) {
+      posts = posts.map(p => p + DISCLAIMER);
+      elaborated = elaborated.map(p => p + DISCLAIMER);
+    }
     const notes = CONNECTION_NOTES(topic).slice(0,5);
     const comments = COMMENT_STARTERS(topic);
-    state.drafts = { topic, angle, posts, notes, comments, generatedOn: todayISO() };
+    state.drafts = { topic, angle, posts, elaborated, notes, comments, generatedOn: todayISO() };
     markActiveToday();
     save();
     renderDrafts();
     renderLedger();
   };
 
+  window.togglePost = function(i){
+    const box = document.getElementById('post-elab-' + i);
+    const hint = document.getElementById('post-hint-' + i);
+    if (!box) return;
+    const isOpen = box.style.display === 'block';
+    box.style.display = isOpen ? 'none' : 'block';
+    if (hint) hint.textContent = isOpen ? 'Click to see a full sample post' : 'Click to collapse';
+  };
+
   function renderDrafts(){
     const el = document.getElementById('draftsList');
     const d = state.drafts;
     if (!d || !d.posts) { el.innerHTML = `<div class="lga-empty">Enter a topic above and generate this week's drafts.</div>`; return; }
+    function postSection(title, items, elaborated){
+      return `<div class="lga-card">
+        <p style="font-weight:500; font-size:14px; margin:0 0 10px;">${title}</p>
+        ${items.map((txt, i) => `
+          <div style="padding:8px 0; border-top:0.5px solid var(--border); cursor:pointer;" onclick="togglePost(${i})">
+            <p style="font-size:13px; margin:0; line-height:1.5;">${txt}</p>
+            <p class="lga-mono" id="post-hint-${i}" style="margin:6px 0 0;">Click to see a full sample post</p>
+            <div id="post-elab-${i}" style="display:none; margin-top:8px; padding:10px; background:var(--surface-1); border-radius:var(--radius);">
+              <p style="font-size:13px; margin:0; line-height:1.6;">${elaborated[i]}</p>
+            </div>
+          </div>`).join('')}
+      </div>`;
+    }
     function section(title, items){
       return `<div class="lga-card">
         <p style="font-weight:500; font-size:14px; margin:0 0 10px;">${title}</p>
@@ -248,7 +302,7 @@
     }
     el.innerHTML =
       `<div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;"><span class="lga-tag">${d.angle}</span><span class="lga-mono">generated ${d.generatedOn}</span></div>` +
-      section('Post ideas', d.posts) +
+      postSection('Post ideas', d.posts, d.elaborated || d.posts) +
       section('Connection request notes', d.notes) +
       section('Comment starters', d.comments);
   }
