@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LinkedIn growth assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
+<style>
+  :root {
+    --surface-2: #ffffff;
+    --surface-1: #f6f5f2;
+    --surface-0: #efeee9;
+    --text-primary: #1a1a18;
+    --text-secondary: #5f5e5a;
+    --text-muted: #8b8a85;
+    --border: rgba(0,0,0,0.12);
+    --border-strong: rgba(0,0,0,0.22);
+    --border-accent: #B8935A;
+    --radius: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-2: #242320;
+      --surface-1: #1c1b19;
+      --surface-0: #141312;
+      --text-primary: #f0efe9;
+      --text-secondary: #b5b3ac;
+      --text-muted: #83817a;
+      --border: rgba(255,255,255,0.14);
+      --border-strong: rgba(255,255,255,0.24);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--surface-0); font-family: 'Inter', system-ui, sans-serif; color: var(--text-primary); }
+  .lga-wrap { max-width: 680px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+  .lga h1 { font-family: 'Source Serif 4', Georgia, serif; font-weight: 500; font-size: 22px; margin: 0 0 1.5rem; }
+  .lga-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+  .lga-tab { padding: 10px 4px; font-size: 14px; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; margin-right: 20px; user-select: none; }
+  .lga-tab.active { color: #12233D; border-bottom-color: #B8935A; font-weight: 500; }
+  @media (prefers-color-scheme: dark) { .lga-tab.active { color: #E8D9B8; } }
+  .lga-card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 10px; }
+  .lga-ledger { display: flex; gap: 6px; margin-bottom: 1.5rem; }
+  .lga-dot { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid #B8935A; }
+  .lga-dot.filled { background: #B8935A; }
+  input, select, button, textarea { font-family: inherit; font-size: 14px; }
+  input[type="text"], input[type="number"], select {
+    height: 36px; padding: 0 10px; border: 0.5px solid var(--border); border-radius: var(--radius);
+    background: var(--surface-2); color: var(--text-primary);
+  }
+  input[type="text"]:focus, input[type="number"]:focus, select:focus { outline: none; border-color: var(--border-accent); box-shadow: 0 0 0 2px rgba(184,147,90,0.25); }
+  button {
+    height: 36px; padding: 0 14px; border: 0.5px solid var(--border-strong); border-radius: var(--radius);
+    background: transparent; color: var(--text-primary); cursor: pointer;
+  }
+  button:hover { background: var(--surface-1); }
+  button:active { transform: scale(0.98); }
+  .lga-mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-muted); }
+  .lga-copy { font-size: 12px; padding: 4px 10px; height: auto; }
+  .lga-tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #F2E8D5; color: #6B4E1F; font-weight: 500; }
+  @media (prefers-color-scheme: dark) { .lga-tag { background: #4A3A1E; color: #E8D9B8; } }
+  .lga-empty { text-align: center; padding: 2rem 1rem; color: var(--text-muted); font-size: 13px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+</style>
+</head>
+<body>
+<div class="lga-wrap lga">
+<h1>LinkedIn growth assistant</h1>
+<h2 class="sr-only">Draft weekly content and connection notes, track your network, and manage a weekly engagement checklist</h2>
+
+<div class="lga-ledger" id="ledgerStrip"></div>
+
+<div class="lga-tabs">
+  <div class="lga-tab active" data-tab="drafts">This week's drafts</div>
+  <div class="lga-tab" data-tab="tracker">Network log</div>
+  <div class="lga-tab" data-tab="engage">Engage list</div>
+</div>
+
+<div id="panel-drafts">
+  <div class="lga-card">
+    <p style="font-size:13px; color:var(--text-secondary); margin:0 0 8px;">Your focus topic (e.g. trade finance, ESG, risk management)</p>
+    <div style="display:flex; gap:8px;">
+      <input id="topicInput" type="text" placeholder="trade finance" style="flex:1;">
+      <select id="angleInput" style="width:170px;">
+        <option value="commentator">Commentator</option>
+        <option value="connector">Connector</option>
+        <option value="niche">Niche specialist</option>
+        <option value="mentor">Mentor</option>
+        <option value="advocate">Company advocate</option>
+      </select>
+      <button onclick="generateDrafts()">Generate week</button>
+    </div>
+    <label style="display:flex; gap:6px; align-items:center; font-size:12px; color:var(--text-secondary); margin-top:10px;">
+      <input type="checkbox" id="disclaimerToggle" checked style="height:auto;"> add a "views are my own" line to posts
+    </label>
+  </div>
+  <div id="draftsList"></div>
+</div>
+
+<div id="panel-tracker" style="display:none;">
+  <div class="lga-card">
+    <p style="font-size:13px; color:var(--text-secondary); margin:0 0 8px; font-weight:500;">This week's impressions</p>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <input id="impressionsInput" type="number" placeholder="e.g. 340" style="width:140px;">
+      <button onclick="logImpressions()">Log</button>
+      <span class="lga-mono" id="impressionsTrend" style="margin-left:auto;"></span>
+    </div>
+    <div id="impressionsChart" style="display:flex; align-items:flex-end; gap:6px; height:60px; margin-top:12px;"></div>
+  </div>
+  <div class="lga-card">
+    <p style="font-size:13px; color:var(--text-secondary); margin:0 0 8px; font-weight:500;">Add a new connection</p>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
+      <input id="contactName" type="text" placeholder="Name">
+      <input id="contactRole" type="text" placeholder="Role or company">
+    </div>
+    <input id="contactNote" type="text" placeholder="Why you connected" style="width:100%; margin-bottom:8px;">
+    <button onclick="addContact()">Add to log</button>
+  </div>
+  <div id="contactsList"></div>
+</div>
+
+<div id="panel-engage" style="display:none;">
+  <div class="lga-card">
+    <div style="display:flex; gap:8px;">
+      <input id="engageInput" type="text" placeholder="Person, company, or topic to check this week" style="flex:1;">
+      <button onclick="addEngageItem()">Add</button>
+    </div>
+  </div>
+  <div id="engageList"></div>
+</div>
+
+</div>
+
+<script>
+(function(){
+  let state = { drafts: null, contacts: [], engageItems: [], impressions: [], lastActiveDays: [] };
+
+  const STORE_KEY = 'lga-state-v1';
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw) state = JSON.parse(raw);
+    } catch (e) { /* no existing state */ }
+    render();
+  }
+
+  function save() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+    catch (e) { console.error('save failed', e); }
+  }
+
+  function todayISO(){ return new Date().toISOString().slice(0,10); }
+
+  function markActiveToday(){
+    const t = todayISO();
+    if (!state.lastActiveDays.includes(t)) state.lastActiveDays.push(t);
+    state.lastActiveDays = state.lastActiveDays.slice(-7);
+  }
+
+  function renderLedger(){
+    const days = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now); d.setDate(now.getDate() - i);
+      days.push(d.toISOString().slice(0,10));
+    }
+    const strip = document.getElementById('ledgerStrip');
+    strip.innerHTML = days.map(d => {
+      const filled = state.lastActiveDays.includes(d);
+      return `<div class="lga-dot ${filled ? 'filled' : ''}" title="${d}"></div>`;
+    }).join('');
+  }
+
+  const TEMPLATES = {
+    commentator: (topic) => ([
+      `Share your honest read on a recent ${topic} headline: what surprised you and why it matters for clients.`,
+      `Post a short "3 things I'm watching in ${topic} this quarter" list.`,
+      `React to a stat or report on ${topic} with one contrarian or nuanced point.`
+    ]),
+    connector: (topic) => ([
+      `Congratulate someone in your network on a recent move, tagging them, and note a shared ${topic} interest.`,
+      `Share a "worth following" post: 2-3 people doing interesting work in ${topic}, with a line on each.`,
+      `Post about a recent conversation (anonymised) that gave you a new angle on ${topic}.`
+    ]),
+    niche: (topic) => ([
+      `Break down one concept in ${topic} simply, as if explaining it to a smart junior colleague.`,
+      `Share a "common misconception about ${topic}" post.`,
+      `Post a short case study or example (anonymised) showing ${topic} in practice.`
+    ]),
+    mentor: (topic) => ([
+      `Answer a question you often get from junior colleagues about breaking into ${topic}.`,
+      `Share one lesson you wish you'd known earlier about ${topic}, framed for someone earlier in their career.`,
+      `Post a short "how I'd approach ${topic} if starting over" reflection.`
+    ]),
+    advocate: (topic) => ([
+      `Reshare MUFG's latest result, report, or announcement related to ${topic}, adding 2-3 sentences on what it means for clients or your own work.`,
+      `Post a short recap after an internal town hall, panel, or conference on ${topic}, tagging the speakers and one thing you took away.`,
+      `Write a short team-credit post about a completed ${topic} project, naming and tagging collaborators (with manager sign-off first).`
+    ])
+  };
+
+  const CONNECTION_NOTES = (topic) => ([
+    `Hi [Name], I enjoyed your recent post on ${topic} — would love to stay connected.`,
+    `Hi [Name], we're both focused on ${topic} at [MUFG / their firm] — keen to connect and swap notes.`,
+    `Hi [Name], following your work on ${topic} for a while now. Would be great to connect.`,
+    `Hi [Name], we met at [event/context] — let's stay in touch here.`,
+    `Hi [Name], your take on [specific post] was sharp. Adding you to my network.`
+  ]);
+
+  const COMMENT_STARTERS = (topic) => ([
+    `This tracks with what I'm seeing in ${topic} — particularly around [specific point].`,
+    `Curious how this plays out for [specific segment] — have you seen data on that?`,
+    `Well put. I'd add that [specific nuance] often gets overlooked here.`
+  ]);
+
+  const DISCLAIMER = " (Views are my own, not my employer's.)";
+
+  window.generateDrafts = function(){
+    const topic = (document.getElementById('topicInput').value || 'your field').trim();
+    const angle = document.getElementById('angleInput').value;
+    const wantsDisclaimer = document.getElementById('disclaimerToggle').checked;
+    let posts = TEMPLATES[angle](topic);
+    if (wantsDisclaimer) posts = posts.map(p => p + DISCLAIMER);
+    const notes = CONNECTION_NOTES(topic).slice(0,5);
+    const comments = COMMENT_STARTERS(topic);
+    state.drafts = { topic, angle, posts, notes, comments, generatedOn: todayISO() };
+    markActiveToday();
+    save();
+    renderDrafts();
+    renderLedger();
+  };
+
+  async function copyText(text, btn){
+    try {
+      await navigator.clipboard.writeText(text);
+      const orig = btn.textContent;
+      btn.textContent = 'Copied';
+      setTimeout(() => { btn.textContent = orig; }, 1200);
+    } catch(e) {}
+  }
+  window.copyText = copyText;
+
+  function renderDrafts(){
+    const el = document.getElementById('draftsList');
+    const d = state.drafts;
+    if (!d || !d.posts) { el.innerHTML = `<div class="lga-empty">Enter a topic above and generate this week's drafts.</div>`; return; }
+    function section(title, items){
+      return `<div class="lga-card">
+        <p style="font-weight:500; font-size:14px; margin:0 0 10px;">${title}</p>
+        ${items.map(txt => `
+          <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; padding:8px 0; border-top:0.5px solid var(--border);">
+            <p style="font-size:13px; margin:0; flex:1; line-height:1.5;">${txt}</p>
+            <button class="lga-copy" onclick="copyText(${JSON.stringify(txt)}, this)">Copy</button>
+          </div>`).join('')}
+      </div>`;
+    }
+    el.innerHTML =
+      `<div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;"><span class="lga-tag">${d.angle}</span><span class="lga-mono">generated ${d.generatedOn}</span></div>` +
+      section('Post ideas', d.posts) +
+      section('Connection request notes', d.notes) +
+      section('Comment starters', d.comments);
+  }
+
+  window.addContact = function(){
+    const name = document.getElementById('contactName').value.trim();
+    const role = document.getElementById('contactRole').value.trim();
+    const note = document.getElementById('contactNote').value.trim();
+    if (!name) return;
+    state.contacts.unshift({ id: Date.now().toString(), name, role, note, date: todayISO(), followedUp: false });
+    document.getElementById('contactName').value = '';
+    document.getElementById('contactRole').value = '';
+    document.getElementById('contactNote').value = '';
+    markActiveToday();
+    save();
+    renderContacts();
+    renderLedger();
+  };
+
+  window.toggleFollowUp = function(id){
+    const c = state.contacts.find(c => c.id === id);
+    if (c) c.followedUp = !c.followedUp;
+    save();
+    renderContacts();
+  };
+
+  window.removeContact = function(id){
+    state.contacts = state.contacts.filter(c => c.id !== id);
+    save();
+    renderContacts();
+  };
+
+  function renderContacts(){
+    const el = document.getElementById('contactsList');
+    if (!state.contacts.length) { el.innerHTML = '<div class="lga-empty">No connections logged yet.</div>'; return; }
+    el.innerHTML = state.contacts.map(c => `
+      <div class="lga-card" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <p style="font-size:14px; font-weight:500; margin:0;">${c.name}${c.role ? ' · ' + c.role : ''}</p>
+          <p style="font-size:12px; color:var(--text-secondary); margin:2px 0 0;">${c.note || ''}</p>
+          <p class="lga-mono" style="margin:2px 0 0;">connected ${c.date}</p>
+        </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <label style="font-size:12px; color:var(--text-secondary); display:flex; gap:4px; align-items:center;">
+            <input type="checkbox" ${c.followedUp ? 'checked' : ''} onchange="toggleFollowUp('${c.id}')" style="height:auto;"> followed up
+          </label>
+          <button class="lga-copy" onclick="removeContact('${c.id}')"><i class="ti ti-trash" aria-hidden="true"></i></button>
+        </div>
+      </div>`).join('');
+  }
+
+  window.logImpressions = function(){
+    const val = parseInt(document.getElementById('impressionsInput').value, 10);
+    if (isNaN(val)) return;
+    state.impressions.push({ week: todayISO(), value: val });
+    state.impressions = state.impressions.slice(-8);
+    document.getElementById('impressionsInput').value = '';
+    markActiveToday();
+    save();
+    renderImpressions();
+    renderLedger();
+  };
+
+  function renderImpressions(){
+    const chart = document.getElementById('impressionsChart');
+    const trend = document.getElementById('impressionsTrend');
+    if (!state.impressions.length) { chart.innerHTML = ''; trend.textContent = ''; return; }
+    const max = Math.max(...state.impressions.map(i => i.value), 1);
+    chart.innerHTML = state.impressions.map(i => {
+      const h = Math.max(4, Math.round((i.value / max) * 56));
+      return `<div title="${i.week}: ${i.value}" style="width:18px; height:${h}px; background:#B8935A; border-radius:2px 2px 0 0;"></div>`;
+    }).join('');
+    if (state.impressions.length > 1) {
+      const prev = state.impressions[state.impressions.length - 2].value;
+      const cur = state.impressions[state.impressions.length - 1].value;
+      const diff = cur - prev;
+      trend.textContent = (diff >= 0 ? '+' : '') + diff + ' vs last log';
+    }
+  }
+
+  window.addEngageItem = function(){
+    const val = document.getElementById('engageInput').value.trim();
+    if (!val) return;
+    state.engageItems.unshift({ id: Date.now().toString(), text: val, done: false });
+    document.getElementById('engageInput').value = '';
+    markActiveToday();
+    save();
+    renderEngage();
+    renderLedger();
+  };
+
+  window.toggleEngage = function(id){
+    const it = state.engageItems.find(i => i.id === id);
+    if (it) it.done = !it.done;
+    save();
+    renderEngage();
+  };
+
+  window.removeEngage = function(id){
+    state.engageItems = state.engageItems.filter(i => i.id !== id);
+    save();
+    renderEngage();
+  };
+
+  function renderEngage(){
+    const el = document.getElementById('engageList');
+    if (!state.engageItems.length) { el.innerHTML = '<div class="lga-empty">Add people, companies, or topics you want to comment on or check in with this week.</div>'; return; }
+    el.innerHTML = state.engageItems.map(it => `
+      <div class="lga-card" style="display:flex; justify-content:space-between; align-items:center;">
+        <label style="font-size:14px; display:flex; gap:10px; align-items:center; ${it.done ? 'color:var(--text-muted); text-decoration:line-through;' : ''}">
+          <input type="checkbox" ${it.done ? 'checked' : ''} onchange="toggleEngage('${it.id}')" style="height:auto;">
+          ${it.text}
+        </label>
+        <button class="lga-copy" onclick="removeEngage('${it.id}')"><i class="ti ti-trash" aria-hidden="true"></i></button>
+      </div>`).join('');
+  }
+
+  function render(){
+    renderLedger();
+    renderDrafts();
+    renderContacts();
+    renderImpressions();
+    renderEngage();
+  }
+
+  document.querySelectorAll('.lga-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.lga-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      ['drafts','tracker','engage'].forEach(name => {
+        document.getElementById('panel-' + name).style.display = (name === tab.dataset.tab) ? 'block' : 'none';
+      });
+    });
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
