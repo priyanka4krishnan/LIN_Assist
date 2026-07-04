@@ -233,30 +233,6 @@
     renderLedger();
   };
 
-  async function copyText(text, btn){
-    const orig = btn.textContent;
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.style.position = 'fixed';
-        ta.style.left = '-9999px';
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-      }
-      btn.textContent = 'Copied';
-    } catch(e) {
-      console.error('copy failed', e);
-      btn.textContent = 'Select text manually';
-    }
-    setTimeout(() => { btn.textContent = orig; }, 1500);
-  }
-  window.copyText = copyText;
-
   function renderDrafts(){
     const el = document.getElementById('draftsList');
     const d = state.drafts;
@@ -265,9 +241,8 @@
       return `<div class="lga-card">
         <p style="font-weight:500; font-size:14px; margin:0 0 10px;">${title}</p>
         ${items.map(txt => `
-          <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; padding:8px 0; border-top:0.5px solid var(--border);">
-            <p style="font-size:13px; margin:0; flex:1; line-height:1.5;">${txt}</p>
-            <button class="lga-copy" onclick="copyText(${JSON.stringify(txt)}, this)">Copy</button>
+          <div style="padding:8px 0; border-top:0.5px solid var(--border);">
+            <p style="font-size:13px; margin:0; line-height:1.5;">${txt}</p>
           </div>`).join('')}
       </div>`;
     }
